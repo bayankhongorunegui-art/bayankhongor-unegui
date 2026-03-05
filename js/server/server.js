@@ -1,60 +1,95 @@
-import express from "express";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
+import express from "express"
+import cors from "cors"
+import path from "path"
+import { fileURLToPath } from "url"
 
-import { get, all, run } from "./db.js";
+import { get, all, run } from "./db.js"
 
-const app = express();
+const app = express()
 
-app.use(cors());
-app.use(express.json());
+app.use(cors())
+app.use(express.json())
 
-// __dirname ES module дээр
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-// ✅ STATIC: project root-оо serve хийнэ
-// js/server/server.js байна -> project root = ../../
-const projectRoot = path.join(__dirname, "..", "..");
-app.use(express.static(projectRoot));
+/*
+Project бүтэц
 
-// DB init
+repo root
+ ├ index.html
+ ├ details.html
+ ├ css
+ ├ js
+ └ js/server/server.js
+*/
 
-// Health check
-app.get("/health", (req, res) => res.json({ ok: true }));
+const ROOT_DIR = path.resolve(__dirname, "../../")
 
-// ✅ API: бүх зар
-app.get("/api/ads", async (req, res) => {
-  try {
-    const rows = await all(`SELECT * FROM ads ORDER BY created_at DESC`);
-    res.json(rows);
-  } catch (e) {
-    res.status(500).json({ error: "DB error", details: String(e) });
-  }
-});
+// static files
+app.use(express.static(ROOT_DIR))
 
-// ✅ API: нэг зар (details.html энэ-г дуудаж байна)
-app.get("/api/ads/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const row = await get(`SELECT * FROM ads WHERE id = ?`, [id]);
-    if (!row) return res.status(404).json({ error: "Not found" });
-    res.json(row);
-  } catch (e) {
-    res.status(500).json({ error: "DB error", details: String(e) });
-  }
-});
+// health check
+app.get("/health",(req,res)=>{
+res.json({ok:true})
+})
 
-// ✅ Root: index.html-г буцаана
-app.get("/", (req, res) => {
-  res.sendFile(path.join(projectRoot, "index.html"));
-});
+/* ---------------- API ---------------- */
 
-// ✅ (Optional) SPA маягаар бусад route-ыг index.html руу чиглүүлэх хэрэг гарвал:
-// app.get("*", (req, res) => res.sendFile(path.join(projectRoot, "index.html")));
+// бүх зар
+app.get("/api/ads", async(req,res)=>{
+try{
+const rows = await all("SELECT * FROM ads ORDER BY id DESC")
+res.json(rows)
+}catch(e){
+res.status(500).json({error:e.message})
+}
+})
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`API running on port ${PORT}`);
-});
+// нэг зар
+app.get("/api/ads/:id", async(req,res)=>{
+try{
+const row = await get("SELECT * FROM ads WHERE id=?",[
+req.params.id
+])
+
+if(!row) return res.status(404).json({error:"Not found"})
+
+res.json(row)
+
+}catch(e){
+res.status(500).json({error:e.message})
+}
+})
+
+// зар нэмэх
+app.post("/api/ads", async(req,res)=>{
+try{
+
+const {title,description,price,phone} = req.body
+
+await run(
+`INSERT INTO ads(title,description,price,phone)
+VALUES(?,?,?,?)`,
+[title,description,price,phone]
+)
+
+res.json({ok:true})
+
+}catch(e){
+res.status(500).json({error:e.message})
+}
+})
+
+/* ---------------- ROOT ---------------- */
+
+// нүүр хуудас
+app.get("/",(req,res)=>{
+res.sendFile(path.join(ROOT_DIR,"index.html"))
+})
+
+const PORT = process.env.PORT || 3001
+
+app.listen(PORT,()=>{
+console.log("Server running on port "+PORT)
+})

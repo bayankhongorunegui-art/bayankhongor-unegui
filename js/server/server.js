@@ -13,23 +13,12 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/*
-Project structure
+const ROOT_DIR = path.resolve(__dirname,"../../")
 
-repo root
- ├ index.html
- ├ details.html
- ├ post.html
- ├ edit.html
- ├ css
- ├ js
- └ js/server/server.js
-*/
-
-const ROOT_DIR = path.resolve(__dirname, "../../");
-
-// ---------- STATIC FILES ----------
-app.use(express.static(ROOT_DIR));
+app.use(express.static(ROOT_DIR))
+app.get("/",(req,res)=>{
+res.sendFile(path.join(ROOT_DIR,"index.html"))
+})
 
 // ---------- DATABASE ----------
 const DB_PATH = path.join(__dirname, "ads.db");

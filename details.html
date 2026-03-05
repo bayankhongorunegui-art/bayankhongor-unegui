@@ -23,8 +23,25 @@
   <script src="js/storage.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+const id = params.get("id");
 
+fetch(`/api/ads`)
+  .then(res => res.json())
+  .then(ads => {
+    const ad = ads.find(a => a.id == id);
+
+    if (!ad) {
+      document.getElementById("details").innerHTML = "Зар олдсонгүй";
+      return;
+    }
+
+    document.getElementById("details").innerHTML = `
+      <h2>${ad.title}</h2>
+      <p><strong>Үнэ:</strong> ${ad.price}</p>
+      <p>${ad.description}</p>
+      <p><strong>Утас:</strong> ${ad.phone}</p>
+    `;
+  });
     // 👀 эхлээд view нэмнэ, дараа нь шинэ ad-г уншина
     if (id) AdsStorage.incrementViews(id);
 

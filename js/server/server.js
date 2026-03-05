@@ -2,95 +2,60 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import sqlite3 from "sqlite3";
+
+import { initDb, get, all, run } from "./db.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-/* -------------------------------- */
-/* PATH тохиргоо */
-/* -------------------------------- */
-
+// __dirname ES module дээр
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* -------------------------------- */
-/* FRONTEND serve хийх */
-/* -------------------------------- */
+// ✅ STATIC: project root-оо serve хийнэ
+// js/server/server.js байна -> project root = ../../
+const projectRoot = path.join(__dirname, "..", "..");
+app.use(express.static(projectRoot));
 
-app.use(express.static(path.join(__dirname, "../../")));
+// DB init
+await initDb();
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../../index.html"));
-});
+// Health check
+app.get("/health", (req, res) => res.json({ ok: true }));
 
-/* -------------------------------- */
-/* DATABASE */
-/* -------------------------------- */
-
-const db = new sqlite3.Database("./ads.db");
-
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS ads (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      price TEXT,
-      description TEXT,
-      phone TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-});
-
-/* -------------------------------- */
-/* API ROUTES */
-/* -------------------------------- */
-
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
-
-/* бүх зар авах */
-app.get("/api/ads", (req, res) => {
-  db.all("SELECT * FROM ads ORDER BY id DESC", [], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err });
-      return;
-    }
+// ✅ API: бүх зар
+app.get("/api/ads", async (req, res) => {
+  try {
+    const rows = await all(`SELECT * FROM ads ORDER BY created_at DESC`);
     res.json(rows);
-  });
+  } catch (e) {
+    res.status(500).json({ error: "DB error", details: String(e) });
+  }
 });
 
-/* зар нэмэх */
-app.post("/api/ads", (req, res) => {
-  const { title, price, description, phone } = req.body;
-
-  db.run(
-    "INSERT INTO ads (title, price, description, phone) VALUES (?,?,?,?)",
-    [title, price, description, phone],
-    function (err) {
-      if (err) {
-        res.status(500).json({ error: err });
-        return;
-      }
-
-      res.json({
-        success: true,
-        id: this.lastID,
-      });
-    }
-  );
+// ✅ API: нэг зар (details.html энэ-г дуудаж байна)
+app.get("/api/ads/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = await get(`SELECT * FROM ads WHERE id = ?`, [id]);
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: "DB error", details: String(e) });
+  }
 });
 
-/* -------------------------------- */
-/* SERVER */
-/* -------------------------------- */
+// ✅ Root: index.html-г буцаана
+app.get("/", (req, res) => {
+  res.sendFile(path.join(projectRoot, "index.html"));
+});
+
+// ✅ (Optional) SPA маягаар бусад route-ыг index.html руу чиглүүлэх хэрэг гарвал:
+// app.get("*", (req, res) => res.sendFile(path.join(projectRoot, "index.html")));
 
 const PORT = process.env.PORT || 3001;
-
 app.listen(PORT, () => {
-  console.log("API running on port " + PORT);
+  console.log(`API running on port ${PORT}`);
 });

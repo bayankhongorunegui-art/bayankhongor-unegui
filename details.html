@@ -1,95 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="mn">
-<head>
-<meta charset="UTF-8">
-<title>Зарын дэлгэрэнгүй</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Зарын дэлгэрэнгүй</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      /* Хэрвээ style.css чинь байхгүй/өөр байвал энэ minimal style аврана */
+      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+      .page { min-height: 100vh; padding: 56px 16px; background: #0b1020; color: #e8eefc; }
+      .container { max-width: 980px; margin: 0 auto; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+      .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color:#e8eefc; text-decoration:none; cursor:pointer; }
+      .card { border-radius: 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); padding: 18px; }
+      .muted { color: rgba(232,238,252,.75); }
+      .title { font-size: 34px; font-weight: 800; margin: 0 0 10px; }
+      .meta { display:flex; flex-wrap: wrap; gap: 10px 14px; margin: 10px 0 14px; }
+      .pill { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); font-size: 13px; }
+      .price { font-size: 22px; font-weight: 800; margin: 6px 0 0; }
+      .desc { white-space: pre-wrap; line-height: 1.6; margin-top: 14px; }
+      .error { padding: 14px; border-radius: 14px; border: 1px solid rgba(255,100,100,.25); background: rgba(255,0,0,.08); }
+      .loading { opacity: .8; }
+    </style>
+  </head>
 
-<link rel="stylesheet" href="css/style.css">
+  <body>
+    <!-- ✅ Заавал байх container -->
+    <div class="page">
+      <div class="container" id="details-container">
+        <div class="topbar">
+          <h1 style="margin:0; font-size:28px; font-weight:800;">Зарын дэлгэрэнгүй</h1>
+          <a class="btn" href="index.html">← Буцах</a>
+        </div>
 
-<style>
-body{
-background:#071126;
-color:white;
-font-family:Arial;
-margin:0;
-padding:40px;
-}
+        <div class="card loading" id="details-card">
+          Ачаалж байна...
+        </div>
+      </div>
+    </div>
 
-.container{
-max-width:800px;
-margin:auto;
-}
+    <script>
+      function formatPrice(p) {
+        const n = Number(p || 0);
+        return n.toLocaleString("mn-MN") + "₮";
+      }
+      function escapeHtml(str) {
+        return String(str ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
 
-.card{
-background:#0e1c36;
-padding:25px;
-border-radius:10px;
-}
+      const params = new URLSearchParams(location.search);
+      const id = params.get("id");
+      const card = document.getElementById("details-card");
 
-.price{
-font-size:22px;
-color:#ffd369;
-margin-top:10px;
-}
+      async function load() {
+        if (!id) {
+          card.classList.remove("loading");
+          card.innerHTML = `<div class="error"><b>Алдаа:</b> ID олдсонгүй. (URL дээр <code>?id=...</code> байх ёстой)</div>`;
+          return;
+        }
 
-.back{
-display:inline-block;
-margin-top:25px;
-padding:10px 18px;
-background:#1a2b4f;
-border-radius:6px;
-text-decoration:none;
-color:white;
-}
-</style>
+        try {
+          const res = await fetch(`/api/ads/${encodeURIComponent(id)}`);
+          if (!res.ok) {
+            card.classList.remove("loading");
+            card.innerHTML = `<div class="error"><b>Олдсонгүй:</b> Энэ зар байхгүй байна.</div>`;
+            return;
+          }
 
-</head>
+          const ad = await res.json();
 
-<body>
+          const title = escapeHtml(ad.title);
+          const description = escapeHtml(ad.description || "");
+          const category = escapeHtml(ad.category || "Ангилалгүй");
+          const phone = escapeHtml(ad.phone || "Утас байхгүй");
+          const price = formatPrice(ad.price || 0);
+          const views = Number(ad.views || 0);
+          const created = escapeHtml(ad.created_at || "");
 
-<div class="container">
+          card.classList.remove("loading");
+          card.innerHTML = `
+            <div>
+              <div class="title">${title}</div>
+              <div class="price">${price}</div>
 
-<h1>Зарын дэлгэрэнгүй</h1>
+              <div class="meta">
+                <span class="pill">📌 Ангилал: ${category}</span>
+                <span class="pill">📞 Утас: ${phone}</span>
+                <span class="pill">👁 Үзсэн: ${views}</span>
+                ${created ? `<span class="pill">🕒 Огноо: ${created}</span>` : ""}
+              </div>
 
-<div id="details" class="card">
-Ачаалж байна...
-</div>
+              <div class="desc">${description || `<span class="muted">Тайлбар алга.</span>`}</div>
+            </div>
+          `;
+        } catch (e) {
+          card.classList.remove("loading");
+          card.innerHTML = `<div class="error"><b>Алдаа:</b> ${escapeHtml(e.message)}</div>`;
+        }
+      }
 
-<a href="index.html" class="back">← Буцах</a>
-
-</div>
-
-<script>
-
-const params = new URLSearchParams(window.location.search);
-const id = params.get("id");
-
-if(!id){
-document.getElementById("details").innerHTML="Зар олдсонгүй";
-}
-
-fetch("/api/ads/"+id)
-.then(res=>res.json())
-.then(ad=>{
-
-if(!ad || ad.error){
-document.getElementById("details").innerHTML="Зар олдсонгүй";
-return;
-}
-
-document.getElementById("details").innerHTML=`
-<h2>${ad.title}</h2>
-<div class="price">Үнэ: ${ad.price} ₮</div>
-<p>${ad.description || ""}</p>
-<p><b>Утас:</b> ${ad.phone || "-"}</p>
-`;
-
-})
-.catch(()=>{
-document.getElementById("details").innerHTML="Алдаа гарлаа";
-});
-
-</script>
-
-</body>
+      load();
+    </script>
+  </body>
 </html>

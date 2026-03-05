@@ -1,171 +1,95 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="mn">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Зарын дэлгэрэнгүй</title>
+<meta charset="UTF-8">
+<title>Зарын дэлгэрэнгүй</title>
 
-  <!-- Танайд байгаа style.css-ээ ашиглана -->
-  <link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/style.css">
 
-  <!-- Хэрвээ style.css чинь details дээр зарим элементэд хүрэхгүй бол доорх fallback style ажиллана -->
-  <style>
-    /* fallback: танай загвартай зөрчилдөхгүй minimal */
-    .page-wrap{ max-width: 980px; margin: 0 auto; padding: 28px 16px; }
-    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
-    .btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color:#fff; text-decoration:none; cursor:pointer; }
-    .btn:hover{ background: rgba(255,255,255,.10); }
-    .card{ border-radius:16px; border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); padding:16px; }
-    .muted{ opacity:.75; }
-    .title{ font-size: 34px; font-weight: 800; margin: 0; }
-    .price{ font-size: 22px; font-weight: 800; margin: 10px 0 6px; }
-    .grid{ display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px; }
-    @media(min-width: 840px){ .grid{ grid-template-columns: 1.2fr .8fr; } }
-    .kv{ display:grid; grid-template-columns: 140px 1fr; gap:8px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.08); }
-    .kv:last-child{ border-bottom:0; }
-    .pill{ display:inline-flex; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); }
-    pre{ white-space: pre-wrap; word-break: break-word; }
-  </style>
+<style>
+body{
+background:#071126;
+color:white;
+font-family:Arial;
+margin:0;
+padding:40px;
+}
+
+.container{
+max-width:800px;
+margin:auto;
+}
+
+.card{
+background:#0e1c36;
+padding:25px;
+border-radius:10px;
+}
+
+.price{
+font-size:22px;
+color:#ffd369;
+margin-top:10px;
+}
+
+.back{
+display:inline-block;
+margin-top:25px;
+padding:10px 18px;
+background:#1a2b4f;
+border-radius:6px;
+text-decoration:none;
+color:white;
+}
+</style>
+
 </head>
 
 <body>
-  <div class="page-wrap">
-    <div class="topbar">
-      <div>
-        <h1 class="title">Зарын дэлгэрэнгүй</h1>
-        <div class="muted">Дэлгэрэнгүй мэдээлэл ачаалж байна…</div>
-      </div>
-      <a class="btn" href="index.html">← Буцах</a>
-    </div>
 
-    <!-- ✅ ТАНЫ ХҮССЭН container (body дотор заавал байг) -->
-    <div id="details" class="card">
-      Ачаалж байна…
-    </div>
-  </div>
+<div class="container">
 
-  <script>
-    // 1) URL param-аас id авах
-    const qs = new URLSearchParams(location.search);
-    const id = qs.get("id");
+<h1>Зарын дэлгэрэнгүй</h1>
 
-    const el = document.getElementById("details");
+<div id="details" class="card">
+Ачаалж байна...
+</div>
 
-    function escapeHtml(s){
-      return String(s ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
+<a href="index.html" class="back">← Буцах</a>
 
-    // 2) Үнэ форматлах (тоон бол мянгатын таслалтай)
-    function formatPrice(v){
-      if (v === null || v === undefined || v === "") return "—";
-      const n = Number(v);
-      if (Number.isFinite(n)) return n.toLocaleString("mn-MN") + " ₮";
-      return String(v);
-    }
+</div>
 
-    // 3) API-с ирсэн объектын field нэр өөр байж болдог тул normalize хийе
-    function normalizeAd(raw){
-      // зарим backend {ad:{...}} эсвэл {data:{...}} хэлбэртэй буцаадаг
-      const ad = raw?.ad ?? raw?.data ?? raw;
+<script>
 
-      return {
-        title: ad?.title ?? ad?.name ?? ad?.header ?? "Гарчиггүй",
-        price: ad?.price ?? ad?.cost ?? ad?.amount ?? "",
-        description: ad?.description ?? ad?.desc ?? ad?.body ?? "",
-        phone: ad?.phone ?? ad?.contact ?? ad?.phoneNumber ?? "",
-        category: ad?.category ?? ad?.cat ?? "",
-        location: ad?.location ?? ad?.address ?? "",
-        featured: ad?.featured ?? ad?.isFeatured ?? ad?.star ?? false,
-        createdAt: ad?.created_at ?? ad?.createdAt ?? ad?.created ?? ""
-      };
-    }
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
 
-    function renderError(msg, extraObj){
-      el.innerHTML = `
-        <div class="muted" style="margin-bottom:10px;">❗ ${escapeHtml(msg)}</div>
-        ${extraObj ? `<details class="card" style="margin-top:12px;">
-          <summary class="btn" style="display:inline-flex;">Алдааны дэлгэрэнгүй (debug)</summary>
-          <pre>${escapeHtml(JSON.stringify(extraObj, null, 2))}</pre>
-        </details>` : ""}
-      `;
-    }
+if(!id){
+document.getElementById("details").innerHTML="Зар олдсонгүй";
+}
 
-    function renderAd(ad){
-      const a = normalizeAd(ad);
+fetch("/api/ads/"+id)
+.then(res=>res.json())
+.then(ad=>{
 
-      el.innerHTML = `
-        <div class="grid">
-          <div class="card">
-            <div style="display:flex; gap:10px; align-items:center; justify-content:space-between;">
-              <h2 style="margin:0; font-size:26px;">${escapeHtml(a.title)}</h2>
-              ${a.featured ? `<span class="pill">⭐ Онцгой</span>` : ``}
-            </div>
+if(!ad || ad.error){
+document.getElementById("details").innerHTML="Зар олдсонгүй";
+return;
+}
 
-            <div class="price">Үнэ: ${escapeHtml(formatPrice(a.price))}</div>
+document.getElementById("details").innerHTML=`
+<h2>${ad.title}</h2>
+<div class="price">Үнэ: ${ad.price} ₮</div>
+<p>${ad.description || ""}</p>
+<p><b>Утас:</b> ${ad.phone || "-"}</p>
+`;
 
-            ${a.description ? `
-              <div style="margin-top:12px;">
-                <div class="muted" style="margin-bottom:6px;">Тайлбар</div>
-                <div>${escapeHtml(a.description).replaceAll("\n","<br>")}</div>
-              </div>
-            ` : `<div class="muted" style="margin-top:12px;">Тайлбар алга байна.</div>`}
-          </div>
+})
+.catch(()=>{
+document.getElementById("details").innerHTML="Алдаа гарлаа";
+});
 
-          <div class="card">
-            <div class="muted" style="margin-bottom:10px;">Мэдээлэл</div>
+</script>
 
-            <div class="kv"><div class="muted">Утас</div><div><b>${escapeHtml(a.phone || "—")}</b></div></div>
-            <div class="kv"><div class="muted">Ангилал</div><div>${escapeHtml(a.category || "—")}</div></div>
-            <div class="kv"><div class="muted">Байршил</div><div>${escapeHtml(a.location || "—")}</div></div>
-            <div class="kv"><div class="muted">Огноо</div><div>${escapeHtml(a.createdAt || "—")}</div></div>
-
-            <button class="btn" id="refreshBtn" style="margin-top:12px; width:100%; justify-content:center;">
-              ↻ Дахин ачаалах
-            </button>
-          </div>
-        </div>
-      `;
-
-      document.getElementById("refreshBtn").addEventListener("click", () => load());
-    }
-
-    async function load(){
-      if(!id){
-        renderError("URL дээр id байхгүй байна. (ж: details.html?id=123)");
-        return;
-      }
-
-      el.textContent = "Ачаалж байна…";
-
-      try{
-        // ✅ API endpoint: /api/ads/:id
-        const res = await fetch(`/api/ads/${encodeURIComponent(id)}`);
-
-        // зарим үед res.ok биш байж болно
-        const data = await res.json().catch(() => null);
-
-        if(!res.ok){
-          renderError(`API алдаа: ${res.status}`, data);
-          return;
-        }
-
-        if(!data || data.error){
-          renderError(data?.error || "Зар олдсонгүй", data);
-          return;
-        }
-
-        renderAd(data);
-      }catch(err){
-        renderError("Сүлжээ/серверийн алдаа гарлаа", { message: String(err) });
-      }
-    }
-
-    load();
-  </script>
 </body>
 </html>

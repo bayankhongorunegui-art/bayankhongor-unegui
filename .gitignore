@@ -1,6 +1,4 @@
 node_modules/
 js/server/node_modules/
-js/server/ads.db
-ads.db
+*.db
 .env
-.DS_Store

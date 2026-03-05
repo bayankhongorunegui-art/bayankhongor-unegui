@@ -1,170 +1,101 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="mn">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Зарын дэлгэрэнгүй</title>
-  <link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8">
+<title>Зарын дэлгэрэнгүй</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#081226;
+  color:white;
+  margin:0;
+  padding:40px;
+}
+
+.container{
+  max-width:800px;
+  margin:auto;
+}
+
+h1{
+  margin-bottom:20px;
+}
+
+.card{
+  background:#0f1c35;
+  padding:25px;
+  border-radius:10px;
+}
+
+.price{
+  font-size:22px;
+  color:#ffd369;
+  margin:10px 0;
+}
+
+.phone{
+  margin-top:20px;
+  font-size:18px;
+}
+
+.back{
+  margin-top:30px;
+  display:inline-block;
+  padding:10px 20px;
+  background:#1b2a4a;
+  color:white;
+  text-decoration:none;
+  border-radius:6px;
+}
+</style>
+
 </head>
+
 <body>
 
-  <header class="container header">
-    <div>
-      <h1>Зарын дэлгэрэнгүй</h1>
-      <p class="muted" id="sub"></p>
-    </div>
-    <a class="btn secondary" href="index.html">← Буцах</a>
-  </header>
+<div class="container">
 
-  <main class="container">
-    <section id="box" class="card"></section>
-  </main>
+<h1>Зарын дэлгэрэнгүй</h1>
 
-  <script src="js/storage.js"></script>
-  <script>
-    const params = new URLSearchParams(window.location.search);
+<div id="details" class="card">
+Ачаалж байна...
+</div>
+
+<a href="index.html" class="back">← Буцах</a>
+
+</div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
-fetch(`/api/ads`)
-  .then(res => res.json())
-  .then(ads => {
-    const ad = ads.find(a => a.id == id);
+if(!id){
+ document.getElementById("details").innerHTML = "Зарын ID олдсонгүй";
+}
 
-    if (!ad) {
-      document.getElementById("details").innerHTML = "Зар олдсонгүй";
-      return;
-    }
+fetch("/api/ads/" + id)
+.then(res=>res.json())
+.then(ad=>{
 
-    document.getElementById("details").innerHTML = `
-      <h2>${ad.title}</h2>
-      <p><strong>Үнэ:</strong> ${ad.price}</p>
-      <p>${ad.description}</p>
-      <p><strong>Утас:</strong> ${ad.phone}</p>
-    `;
-  });
-    // 👀 эхлээд view нэмнэ, дараа нь шинэ ad-г уншина
-    if (id) AdsStorage.incrementViews(id);
+ if(!ad || ad.error){
+  document.getElementById("details").innerHTML = "Зар олдсонгүй";
+  return;
+ }
 
-    const ad = AdsStorage.getById(id);
-    const box = document.getElementById("box");
-    const sub = document.getElementById("sub");
+ document.getElementById("details").innerHTML = `
+   <h2>${ad.title}</h2>
+   <div class="price">Үнэ: ${ad.price} ₮</div>
+   <p>${ad.description || ""}</p>
+   <div class="phone">Утас: ${ad.phone || "-"}</div>
+ `;
+})
+.catch(()=>{
+ document.getElementById("details").innerHTML = "Алдаа гарлаа";
+});
 
-    function formatPrice(p) {
-      const n = Number(p || 0);
-      if (!n) return "Үнэ: тохиролцоно";
-      return "Үнэ: " + n.toLocaleString("mn-MN") + "₮";
-    }
-
-    function formatDate(iso) {
-      try {
-        return new Date(iso).toLocaleString("mn-MN");
-      } catch {
-        return "";
-      }
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    if (!ad) {
-      sub.textContent = "";
-      box.innerHTML = `
-        <p class="muted">Зар олдсонгүй. Магадгүй устсан байна.</p>
-        <a class="btn" href="index.html">Нүүр рүү очих</a>
-      `;
-    } else {
-      const views = Number(ad.views || 0);
-
-      sub.textContent = `${ad.category} • ${ad.location} • ${formatDate(ad.createdAt)} • 👀 ${views} үзсэн`;
-
-      box.innerHTML = `
-        ${ad.image ? `
-          <img
-            src="${ad.image}"
-            alt=""
-            style="width:100%;max-height:360px;object-fit:cover;border-radius:14px;border:1px solid var(--border);margin-bottom:12px"
-          />
-        ` : ""}
-
-        <div class="row" style="justify-content:space-between;align-items:flex-start">
-          <div>
-            <h2 style="margin:0 0 6px">${escapeHtml(ad.title)}</h2>
-            <p class="muted small" style="margin:0">${formatPrice(ad.price)} • 👀 ${views} үзсэн</p>
-          </div>
-          <span class="badge">${escapeHtml(ad.category)}</span>
-        </div>
-
-        <hr style="border:0;border-top:1px solid var(--border);margin:14px 0" />
-
-        <p><b>Байршил:</b> ${escapeHtml(ad.location)}</p>
-
-        <p>
-          <b>Утас:</b>
-          <span id="phoneText">${escapeHtml(ad.phone)}</span>
-          <button id="copyBtn" class="btn secondary" style="padding:6px 10px;margin-left:8px">Copy</button>
-        </p>
-
-        <p><b>Тайлбар:</b></p>
-        <p class="muted" style="white-space:pre-wrap">${escapeHtml(ad.description)}</p>
-
-        <div class="row" style="margin-top:20px">
-          <a class="btn secondary" href="index.html">← Буцах</a>
-          <button id="editBtn" class="btn secondary">✏️ Засах</button>
-          <button id="deleteBtn" class="btn" style="background:#7a1b1b">🗑 Устгах</button>
-        </div>
-
-        <p class="muted small" style="margin-top:12px">
-          * Засах/устгах хийхэд нууц код шаардана.
-        </p>
-      `;
-
-      // Copy phone
-      document.getElementById("copyBtn").addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(ad.phone);
-          alert("Дугаар copy хийгдлээ!");
-        } catch {
-          alert("Copy хийх боломжгүй байна (browser permission).");
-        }
-      });
-
-      // ✏️ Edit (PIN check)
-      document.getElementById("editBtn").addEventListener("click", () => {
-        const input = prompt("Нууц кодоо (4 оронтой) оруулна уу:");
-        if (!input) return;
-
-        if (String(input).trim() !== String(ad.pin).trim()) {
-          alert("❌ Нууц код буруу байна!");
-          return;
-        }
-
-        window.location.href = `edit.html?id=${encodeURIComponent(ad.id)}`;
-      });
-
-      // 🗑 Delete (PIN check)
-      document.getElementById("deleteBtn").addEventListener("click", () => {
-        const input = prompt("Устгахын тулд нууц кодоо оруулна уу:");
-        if (!input) return;
-
-        if (String(input).trim() !== String(ad.pin).trim()) {
-          alert("❌ Нууц код буруу байна!");
-          return;
-        }
-
-        const ok = confirm("Энэ зарыг устгах уу?");
-        if (!ok) return;
-
-        AdsStorage.removeById(ad.id);
-        window.location.href = "index.html";
-      });
-    }
-  </script>
+</script>
 
 </body>
 </html>

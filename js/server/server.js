@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { initDb, get, all, run } from "./db.js";
+import { get, all, run } from "./db.js";
 
 const app = express();
 
@@ -20,7 +20,6 @@ const projectRoot = path.join(__dirname, "..", "..");
 app.use(express.static(projectRoot));
 
 // DB init
-await initDb();
 
 // Health check
 app.get("/health", (req, res) => res.json({ ok: true }));

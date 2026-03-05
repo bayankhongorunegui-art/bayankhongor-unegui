@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Зар нэмэх</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="container header">
+    <div>
+      <h1>Зар нэмэх</h1>
+      <p class="muted">Мэдээллээ бөглөөд нийтлээрэй</p>
+    </div>
+    <a class="btn secondary" href="index.html">← Буцах</a>
+  </header>
+
+  <main class="container">
+    <form id="form" class="card form">
+      <label>Гарчиг
+        <input class="input" name="title" required maxlength="80" placeholder="Ж: iPhone 13 зарна" />
+      </label>
+
+      <label>Ангилал
+        <select class="input" name="category" required>
+          <option>Үл хөдлөх</option>
+          <option>Автомашин</option>
+          <option>Ажлын зар</option>
+          <option>Электрон</option>
+          <option>Бусад</option>
+        </select>
+      </label>
+
+      <label class="row" style="gap:10px;align-items:center">
+        <input type="checkbox" name="featured" />
+        <span>⭐ Онцлох зар болгох</span>
+      </label>
+
+      <label>Үнэ (₮)
+        <input class="input" name="price" type="number" min="0" placeholder="Ж: 1500000" />
+      </label>
+
+      <label>Сум/Байршил
+        <input class="input" name="location" required placeholder="Ж: Баянхонгор сум" />
+      </label>
+
+      <label>Утас
+        <input class="input" name="phone" required placeholder="Ж: 99xxxxxx" />
+      </label>
+
+      <label>Нууц код (4 оронтой)
+        <input class="input" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Ж: 1234" required />
+      </label>
+      <p class="muted small">* Энэ кодоор л зар засах/устгах боломжтой.</p>
+
+      <label>Зураг (1 ширхэг)
+        <input class="input" id="image" name="image" type="file" accept="image/*" />
+      </label>
+
+      <img id="preview" alt="" style="display:none;max-width:100%;border-radius:12px;border:1px solid var(--border)" />
+      <p class="muted small" id="imgHint">* Сонгосон зураг энд харагдана.</p>
+
+      <label>Тайлбар
+        <textarea class="input" name="description" rows="5" required placeholder="Дэлгэрэнгүй мэдээлэл..."></textarea>
+      </label>
+
+      <button class="btn" type="submit">Нийтлэх</button>
+      <p class="muted small">* Том зураг (2MB+) бол localStorage дүүрч магадгүй.</p>
+    </form>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script>
+    const form = document.getElementById('form');
+    const imageInput = document.getElementById('image');
+    const preview = document.getElementById('preview');
+    const imgHint = document.getElementById('imgHint');
+
+    let imageDataUrl = "";
+
+    imageInput?.addEventListener('change', () => {
+      const file = imageInput.files?.[0];
+
+      if (!file) {
+        imageDataUrl = "";
+        preview.style.display = "none";
+        imgHint.textContent = "* Сонгосон зураг энд харагдана.";
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        alert("Зөвхөн зураг файл сонгоно уу!");
+        imageInput.value = "";
+        return;
+      }
+
+      const maxMB = 2;
+      const sizeMB = file.size / (1024 * 1024);
+      if (sizeMB > maxMB) {
+        alert(`Зураг хэт том байна (${sizeMB.toFixed(1)}MB). ${maxMB}MB-аас бага зураг сонгоорой.`);
+        imageInput.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        imageDataUrl = String(reader.result || "");
+        preview.src = imageDataUrl;
+        preview.style.display = "block";
+        imgHint.textContent = "✅ Зураг сонгогдлоо.";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const fd = new FormData(form);
+      const pin = String(fd.get('pin') || '').trim();
+
+      // 4 оронтой PIN шалгах
+      if (!/^\d{4}$/.test(pin)) {
+        alert("Нууц код 4 оронтой тоо байх ёстой!");
+        return;
+      }
+
+      const ad = {
+        id: crypto.randomUUID(),
+        title: String(fd.get('title')).trim(),
+        category: String(fd.get('category')).trim(),
+        price: Number(fd.get('price') || 0),
+        location: String(fd.get('location')).trim(),
+        phone: String(fd.get('phone')).trim(),
+        description: String(fd.get('description')).trim(),
+        image: imageDataUrl,
+        pin,
+        featured: fd.get('featured') === 'on',
+        createdAt: new Date().toISOString()
+      };
+
+      AdsStorage.add(ad);
+      window.location.href = `details.html?id=${encodeURIComponent(ad.id)}`;
+    });
+  </script>
+</body>
+</html>

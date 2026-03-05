@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Зар засах</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="container header">
+    <div>
+      <h1>Зар засах</h1>
+      <p class="muted" id="sub"></p>
+    </div>
+    <a class="btn secondary" href="index.html">← Буцах</a>
+  </header>
+
+  <main class="container">
+    <form id="form" class="card form" style="display:none">
+      <label>Гарчиг
+        <input class="input" name="title" required maxlength="80" />
+      </label>
+
+      <label>Ангилал
+        <select class="input" name="category" required>
+          <option>Үл хөдлөх</option>
+          <option>Автомашин</option>
+          <option>Ажлын зар</option>
+          <option>Электрон</option>
+          <option>Бусад</option>
+        </select>
+      </label>
+
+      <label>Үнэ (₮)
+        <input class="input" name="price" type="number" min="0" />
+      </label>
+
+      <label>Сум/Байршил
+        <input class="input" name="location" required />
+      </label>
+
+      <label>Утас
+        <input class="input" name="phone" required />
+      </label>
+
+      <label>Тайлбар
+        <textarea class="input" name="description" rows="5" required></textarea>
+      </label>
+
+      <button class="btn" type="submit">Хадгалах</button>
+    </form>
+
+    <section id="msg" class="card muted"></section>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    const ad = AdsStorage.getById(id);
+
+    const form = document.getElementById("form");
+    const msg = document.getElementById("msg");
+    const sub = document.getElementById("sub");
+
+    if (!ad) {
+      msg.innerHTML = `
+        <p>Зар олдсонгүй. Магадгүй устсан байна.</p>
+        <a class="btn" href="index.html">Нүүр рүү очих</a>
+      `;
+    } else {
+      msg.style.display = "none";
+      form.style.display = "grid";
+      sub.textContent = `${ad.category} • ${ad.location}`;
+
+      // form-г ad-ийн утгаар дүүргэнэ
+      form.title.value = ad.title || "";
+      form.category.value = ad.category || "Бусад";
+      form.price.value = ad.price || 0;
+      form.location.value = ad.location || "";
+      form.phone.value = ad.phone || "";
+      form.description.value = ad.description || "";
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const patch = {
+          title: form.title.value.trim(),
+          category: form.category.value.trim(),
+          price: Number(form.price.value || 0),
+          location: form.location.value.trim(),
+          phone: form.phone.value.trim(),
+          description: form.description.value.trim(),
+          updatedAt: new Date().toISOString()
+        };
+
+        AdsStorage.updateById(id, patch);
+        window.location.href = `details.html?id=${encodeURIComponent(id)}`;
+      });
+    }
+  </script>
+
+</body>
+</html>
